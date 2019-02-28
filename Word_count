@@ -1,0 +1,22 @@
+from pyspark import SparkContext, SparkConf
+import re
+conf=SparkConf().setAppName("WordCount")
+sc=SparkContext(conf=conf)
+
+file_path='hdfs:///user/jkaul/Book.txt'
+
+def norm_words(text):
+    return re.compile(r'\W+', re.UNICODE).split(text.lower())
+
+ip=sc.textFile(file_path)
+lines=ip.flatMap(norm_words)
+wc_sorted=lines.map(lambda x: (x,1)).reduceByKey(lambda x,y : x+y).map(lambda (x,y): (y,x)).sortByKey()
+
+res=wc_sorted.collect()
+
+for result in res:
+    count=str(result[0])
+    word=result[1].encode('ascii','ignore')
+
+    if word:
+        print word + '\t' + count

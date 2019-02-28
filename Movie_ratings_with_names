@@ -1,0 +1,24 @@
+from pyspark import SparkConf, SparkContext
+
+def loadMovieNames():
+    Movie_Name={}
+    with open(/home/jkaul/u.item) as f:
+        for line in f:
+            fields=line.split("|")
+            Movie_Name[int(fields[0])]=fields[1]
+    return Movie_Name
+
+configs=SparkConf().setAppName('Movie_analys')
+sc=SparkContext(conf=configs)
+
+nameDict=sc.broadcast(loadMovieNames())
+ip='hdfs:///user/jkaul/ml-100k/u.data'
+
+raw_data=sc.textFile(ip)
+m_id_count=raw_data.map(lambda x : (x.split()[1],1)).reduceByKey(lambda x,y : x+y)
+m_id_sorted=m_id_count.map(lambda (x,y):(y,x)).sortByKey(ascending = False)
+
+movie_with_names=m_id_sorted.map(lambda (count,name): nameDict.value[name], count).collect()
+
+for result in movie_with_names:
+    print result
